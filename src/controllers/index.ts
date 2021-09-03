@@ -1,4 +1,5 @@
 import {Request, Response} from 'express';
+import { Model } from 'objection';
 
 class IndexController {
 
@@ -16,8 +17,24 @@ class IndexController {
    * @param req The Request
    * @param res The Response
    */
-  health(req: Request, res: Response): void {
-    res.json({status: 'active', message: 'All services are operational'});
+  async health(req: Request, res: Response): Promise<void> {
+    const result = {
+      status: 'healthy',
+      message: 'Service is active'
+    };
+
+    try {
+      const tables: any[] = await Model.knex().raw('SHOW TABLES');
+      if (tables.length == 0) {
+        result.status = 'unhealthy';
+        result.message = `DB Error: No tables found.`
+      }
+    } catch (ex) {
+      result.status = 'unhealthy';
+      result.message = `DB Error: ${ex.message}`
+    }
+
+    res.json(result);
   }
 }
 
